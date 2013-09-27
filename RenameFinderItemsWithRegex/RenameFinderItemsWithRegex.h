@@ -9,7 +9,20 @@
 #import <Automator/AMBundleAction.h>
 
 @interface RenameFinderItemsWithRegex : AMBundleAction
+{
+	// regex params
+	BOOL caseInsensitive;
+	int options;
+	
+	NSString *pattern;
+	NSString *replace;
+	NSInteger component;
+}
+
+- (id)initWithDefinition:(NSDictionary *)dict fromArchive:(BOOL)archived;
 
 - (id)runWithInput:(id)input fromAction:(AMAction *)anAction error:(NSDictionary **)errorInfo;
+
+- (void)updateParameters;
 
 @end
