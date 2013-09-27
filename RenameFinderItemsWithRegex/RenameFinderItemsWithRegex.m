@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/NSRegularExpression.h>
+#import <Automator/AMAction.h>
 
 #import "RenameFinderItemsWithRegex.h"
 
@@ -66,16 +67,19 @@
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern
                                                                            options:options
                                                                              error:&error];
+    
+    NSLog(@"pattern: %@, caseInsensitive: %d, replacement: %@, component: %ld, options: %d", pattern, caseInsensitive, replace, (long)component, options);
 	
     if (!regex){
-        *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys: @"Invalid Regex", NSAppleScriptErrorMessage,
-                                                                 @-128, NSAppleScriptErrorNumber,
+        NSLog(@"Invalid regex: %@, %@", pattern, error);
+        *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys: @"Error in regular expression.", NSAppleScriptErrorMessage,
                                                                  nil];
         return nil;
     }
 	
     if (!replace){
-        *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys: @"Nothing to do", NSAppleScriptErrorNumber,
+        NSLog(@"No replacement provided.");
+        *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys: @"No replacement specified.", NSAppleScriptErrorMessage,
                                                                  nil];
         return nil;
     }
@@ -93,36 +97,52 @@
             NSRange replaceRange = NSMakeRange([filename length] - [extension length] - 1, [extension length] + 1);
             filename = [filename stringByReplacingCharactersInRange:replaceRange withString:@""];
         }
+        
+        NSLog(@"Filename: %@, Extension: %@", filename, extension);
 		
+        // keep original when we didn't select full path
         NSString *renamedFilename = filename;
         NSString *renamedExtension = extension;
-        NSRange filenameRange = {0, [filename length]};
-        NSRange extensionRange = {0, [extension length]};
+        NSRange filenameRange = NSMakeRange(0, [filename length]);
+        NSRange extensionRange = NSMakeRange(0, [extension length]);
+        
+        NSLog(@"Range: Filename: %lu/%lu, Extension: %lu/%lu", (unsigned long)filenameRange.location, (unsigned long)filenameRange.length, (unsigned long)extensionRange.location, (unsigned long)extension.length);
 		
-        if(component == 0 || component == 1) /* complete or filename only */
+        if(component == 0 || component == 1) {
+            /* complete or filename only */
+            NSLog(@"matches: %lu", (unsigned long)[regex numberOfMatchesInString:filename options:0 range:filenameRange]);
             renamedFilename = [regex stringByReplacingMatchesInString:filename
-                                                              options:options
+                                                              options:0
                                                                 range:filenameRange
                                                          withTemplate:replace];
-        else if(component == 2) /* extension only */
+        }
+        else if(component == 2) {
+            /* extension only */
             renamedExtension = [regex stringByReplacingMatchesInString:extension
-                                                               options:options
+                                                               options:0
                                                                  range:extensionRange
                                                           withTemplate:replace];
-
+        }
+            
+        NSLog(@"Filename: %@, Extension: %@", filename, extension);
+        NSLog(@"Renamed: Filename: %@, Extension %@", renamedFilename, renamedExtension);
+        
         NSString *renamedPath = renamedFilename;
 		
         if (component == 1 || component == 2) /* if we separated filename/extension ... */
             renamedPath = [renamedFilename stringByAppendingPathExtension:renamedExtension];
 		
         if (!renamedPath || [renamedPath length] == 0) {
+            NSLog(@"resulting in empty filename");
             *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys:
-                          @"Resulting in empty filename", NSAppleScriptErrorNumber,
+                          @"Replacement would result in an empty filename.", NSAppleScriptErrorNumber,
                           nil];
             return nil;
         }
 		
         renamedPath = [basepath stringByAppendingPathComponent:renamedPath];
+        
+        NSLog(@"originalPath: %@, renamedPath: %@", originalPath, renamedPath);
 		
         NSError *error;
         BOOL success = [[NSFileManager defaultManager] moveItemAtPath:originalPath
