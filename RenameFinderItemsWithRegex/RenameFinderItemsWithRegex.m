@@ -33,7 +33,7 @@
 	
 	if (!self) return self;
 	
-	NSDictionary *parameters = [dict objectForKey:@"ActionParameters"];
+	NSDictionary *parameters = dict[@"ActionParameters"];
 	[self updateParametersWithDictionary:parameters];
 	
 	return self;
@@ -43,12 +43,12 @@
 
 - (void)updateParametersWithDictionary:(NSDictionary *)parameters
 {
-	caseInsensitive = [[parameters objectForKey:RRX_OPT_CASEINSENSITIVE] boolValue];
+	caseInsensitive = [parameters[RRX_OPT_CASEINSENSITIVE] boolValue];
     if (caseInsensitive) options = NSRegularExpressionCaseInsensitive;
     
-	pattern = [parameters objectForKey:RRX_PATTERN];
-	replace = [parameters objectForKey:RRX_REPLACE];
-	component = [[parameters objectForKey:RRX_COMPONENT] intValue];
+	pattern = parameters[RRX_PATTERN];
+	replace = parameters[RRX_REPLACE];
+	component = [parameters[RRX_COMPONENT] intValue];
 }
 
 #pragma mark Implementation of AMBundleAction
@@ -72,19 +72,17 @@
 	
     if (!regex){
         NSLog(@"Invalid regex: %@, %@", pattern, error);
-        *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys: @"Error in regular expression.", NSAppleScriptErrorMessage,
-                                                                 nil];
+        *errorInfo = @{NSAppleScriptErrorMessage: @"Error in regular expression."};
         return nil;
     }
 	
     if (!replace){
         NSLog(@"No replacement provided.");
-        *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys: @"No replacement specified.", NSAppleScriptErrorMessage,
-                                                                 nil];
+        *errorInfo = @{NSAppleScriptErrorMessage: @"No replacement specified."};
         return nil;
     }
 	
-    NSArray *inputArray = [input isKindOfClass:[NSArray class]] ? input : [NSArray arrayWithObject:input];
+    NSArray *inputArray = [input isKindOfClass:[NSArray class]] ? input : @[input];
     NSMutableArray *returnArray = [NSMutableArray arrayWithCapacity:[inputArray count]];
 	
     for (NSString *originalPath in inputArray) {
@@ -134,9 +132,7 @@
 		
         if (!renamedPath || [renamedPath length] == 0) {
             NSLog(@"resulting in empty filename");
-            *errorInfo = [NSDictionary dictionaryWithObjectsAndKeys:
-                          @"Replacement would result in an empty filename.", NSAppleScriptErrorNumber,
-                          nil];
+            *errorInfo = @{NSAppleScriptErrorNumber: @"Replacement would result in an empty filename."};
             return nil;
         }
 		
